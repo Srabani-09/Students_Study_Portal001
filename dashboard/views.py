@@ -1,5 +1,6 @@
 from django import contrib
 from django.core.checks import messages
+from django.db.models.query import RawQuerySet
 from django.shortcuts import render, redirect
 from . forms import *
 from django.contrib import messages
@@ -10,10 +11,13 @@ from django.urls import path
 import requests
 import phonetics
 import wikipedia
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
 
 # Create your views here.
 def home(request):
     return render(request,'dashboard/home.html')
+@login_required
 def notes(request):
     if request.method == "POST":
         form = NotesForm(request.POST)
@@ -27,6 +31,7 @@ def notes(request):
     context = {'notes':notes,'form':form}
     return render(request,'dashboard/notes.html',context)
 
+@login_required
 def delete_note(request,pk=None):
     Notes.objects.get(id=pk).delete()
     return redirect("notes")
@@ -34,6 +39,7 @@ def delete_note(request,pk=None):
 class NotesDetailView(generic.DetailView):
     model = Notes
     
+@login_required
 def homework(request):
     if request.method == "POST":
         form = HomeworkForm(request.POST)
@@ -68,6 +74,7 @@ def homework(request):
                'form':form}
     return render(request,'dashboard/homework.html',context)
 
+@login_required
 def update_homework(request,pk=None):
     homework = Homework.objects.get(id=pk)
     if homework.is_finished == True:
@@ -77,6 +84,7 @@ def update_homework(request,pk=None):
     homework.save()
     return redirect('homework')
 
+@login_required
 def delete_homework(request,pk=None):
     Homework.objects.get(id=pk).delete()
     return redirect("homework")
@@ -115,6 +123,7 @@ def youtube(request):
     context = {'form':form}
     return render(request,"dashboard/youtube.html",context)
 
+@login_required
 def todo(request):
     if request.method == 'POST':
         form = TodoForm(request.POST)
@@ -147,6 +156,7 @@ def todo(request):
         'todos_done':todos_done
     }
     return render(request,"dashboard/todo.html",context)
+@login_required
 def update_todo(request,pk=None):
     todo = Todo.objects.get(id=pk)
     if todo.is_finished == True:
@@ -156,6 +166,7 @@ def update_todo(request,pk=None):
     todo.save()
     return redirect('todo')
 
+@login_required
 def delete_todo(request,pk=None):
     Todo.objects.get(id=pk).delete()
     return redirect("todo")
@@ -319,6 +330,7 @@ def register(request):
     }
     return render(request,"dashboard/register.html",context)
 
+@login_required
 def profile(request):
     homeworks = Homework.objects.filter(is_finished=False,user=request.user)
     todos = Todo.objects.filter(is_finished=False,user=request.user)
@@ -338,3 +350,10 @@ def profile(request):
     }
     return render(request,"dashboard/profile.html",context)
 
+@require_http_methods(["GET", "POST"])
+def custom_logout(request):
+    if request.method == "GET":
+        logout(request)
+        return redirect('login')  
+    elif request.method == "POST":
+        pass
